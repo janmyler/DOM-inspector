@@ -213,3 +213,16 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+#############
+## Sublime Text
+#############
+
+*.sublime-project
+*.sublime-workspace
+
+#############
+## SASS
+#############
+
+.sass-cache/
