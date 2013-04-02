@@ -9,3 +9,82 @@
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  */
+#adi-wrapper {
+  position: fixed;
+  height: 100%;
+  top: 0;
+  background: #f7f7f7;
+}
+#adi-wrapper.left {
+  left: 0;
+}
+#adi-wrapper.right {
+  right: 0;
+}
+
+#adi-menu {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  height: 34px;
+  background: #d4d4d4;
+  border-top: 1px solid white;
+}
+
+#adi-dom-view {
+  height: 50%;
+  background: red;
+}
+#adi-dom-view .adi-content {
+  background: yellow;
+}
+
+#adi-attr-view {
+  height: 50%;
+  background: blue;
+}
+#adi-attr-view .adi-content {
+  background: pink;
+}
+
+#adi-horiz-split {
+  height: 4px;
+  cursor: n-resize;
+  border-width: 0 0 1px 0;
+  background: #bbc5c9;
+  border-color: #768285;
+  border-style: solid;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+#adi-horiz-split:hover {
+  background: #c5d9d8;
+}
+
+#adi-vert-split {
+  position: fixed;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  cursor: e-resize;
+  border-width: 0 1px 0 0;
+  background: #bbc5c9;
+  border-color: #768285;
+  border-style: solid;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+#adi-vert-split:hover {
+  background: #c5d9d8;
+}
+
+.adi-content {
+  padding: 10px 15px;
+  overflow: auto;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}

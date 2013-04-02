@@ -13,3 +13,96 @@
 @import "compass/css3";
 @import "compass/utilities/general/clearfix";
 
+// colors
+$light: #F7F7F7;
+$activeBlue: #C5D9D8;
+$gray: #D4D4D4;
+$darkGray: #BBC5C9;
+$dark: #768285;
+
+// mixins
+@mixin splitter($orientation: 'horizontal') {
+	@if $orientation == 'horizontal' {
+		height: 4px;
+		cursor: n-resize;
+		border-width: 0 0 1px 0;
+	} @else {
+		position: fixed;
+		top: 0;
+		width: 4px;
+		height: 100%;
+		cursor: e-resize;
+		border-width: 0 1px 0 0;
+	}
+
+	background: $darkGray;
+	border-color: $dark;
+	border-style: solid;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+
+	&:hover {
+		background: $activeBlue;
+	}
+}
+
+// layout
+#adi-wrapper {
+	position: fixed;
+	height: 100%;
+	top: 0;
+	background: $light;
+
+	&.left {
+		left: 0;
+	}
+
+	&.right {
+		right: 0;
+	}
+}
+
+#adi-menu {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+	height: 34px;
+	background: $gray;
+	border-top: 1px solid #fff;
+}
+
+#adi-dom-view {
+	height: 50%;
+	background: red;  // TODO: remove
+
+	.adi-content {
+		background: yellow;
+	}
+}
+
+#adi-attr-view {
+	height: 50%;
+	background: blue;  // TODO: remove
+
+	.adi-content {
+		background: pink;
+	}
+}
+
+#adi-horiz-split {
+	@include splitter();
+}
+
+#adi-vert-split {
+	@include splitter('vertical');
+}
+
+.adi-content {
+	padding: 10px 15px;
+	overflow: auto;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+
