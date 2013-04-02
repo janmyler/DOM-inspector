@@ -22,6 +22,26 @@
 		}
 	}
 
+	// Node types shim -- creates Node type constants if necessary
+	function nodeTypesShim() {
+		if (!window.Node) {
+			return {
+				ELEMENT_NODE                :  1,
+				ATTRIBUTE_NODE              :  2,
+				TEXT_NODE                   :  3,
+				CDATA_SECTION_NODE          :  4,
+				ENTITY_REFERENCE_NODE       :  5,
+				ENTITY_NODE                 :  6,
+				PROCESSING_INSTRUCTION_NODE :  7,
+				COMMENT_NODE                :  8,
+				DOCUMENT_NODE               :  9,
+				DOCUMENT_TYPE_NODE          : 10,
+				DOCUMENT_FRAGMENT_NODE      : 11,
+				NOTATION_NODE               : 12
+			};
+		}
+	}
+
 	// Simple cross-browser event handler.
 	function addEvent(elem, evt, fn, capture) {
 		if (typeof elem !== 'object') {
@@ -176,12 +196,14 @@
 	// AcID DOM Inspector definition (using module pattern).
 	var ADI = (function() {
 		// private methods and variables
-		var ui = null,
+		var Node = window.Node || nodeTypesShim(),
+			ui = null,
 			menu = null,
 			selectedElement = null,
 			vertResizing = false,
 			horizResizing = false,
 			xPos = 0,
+			nLevel = 0,
 			options = {
 				align: 'right',
 				width: 300,
@@ -189,8 +211,16 @@
 				split: 50,
 				minSplit: 30,
 				visible: true,
-				saving: false
+				saving: false,
+				// nodeTypes: {
+				// 	Node.DOCUMENT_NODE : true
+				// 	Node.TEXT_NODE : true,
+				// 	Node.ELEMENT_NODE : true
+				// }
+				nodeTypes: [1, 3, 9]
 			};
+
+
 
 		// Loads user defined options stored in HTML5 storage (if available)
 		function loadOptions() {
@@ -217,6 +247,36 @@
 		function resetOptions() {
 			if (supported('localStorage')) {
 				localStorage.removeItem('ADI.options');
+			}
+		}
+
+		// Renders the DOM Tree view
+		function drawDOM(root, isRoot) {
+			// .childElementCount == .children.length
+			// .childNodes <= .hasChildNodes (contains TEXT_NODE nodes)
+
+			if (typeof root !== 'object') {
+				throw "drawDOM: Expected argument root of type object, " + typeof root + " given.";
+			}
+
+			if (isRoot && options.nodeTypes.indexOf(root.nodeType) !== -1) {
+				console.log(root, nLevel, root.nodeType);
+			}
+
+			// recursive DOM traversal
+			for (var i = 0, len = root.childNodes.length; i < len; ++i) {
+				var node = root.childNodes[i];
+				nLevel += 1;
+
+				// TODO: tree rendering
+				if (options.nodeTypes.indexOf(node.nodeType) !== -1) {
+					console.log(node, nLevel, node.nodeType);
+				}
+
+				if (node.hasChildNodes()) {
+					drawDOM(node, false);
+				}
+				nLevel -= 1;
 			}
 		}
 
@@ -399,7 +459,10 @@
 
 		return {
 			// TODO: public methods and variables (this will be visible to the global scope)
-			toggle: toggleVisibilityUI
+			// TODO: getSelectedElement() method
+			toggle: toggleVisibilityUI,
+			dom: drawDOM,
+			options: options  // FIXME: remove
 		};
 	})();
 
