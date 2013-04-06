@@ -186,7 +186,6 @@
 			case 'classList':
 				return 'classList' in document.createElement('a');
 
-				break;
 			default:
 				throw "supported: Unknown or unsupported key.";
 		}
@@ -197,30 +196,46 @@
 	var ADI = (function() {
 		// private methods and variables
 		var Node = window.Node || nodeTypesShim(),
-			ui = null,
-			menu = null,
-			selectedElement = null,
+			uiView = null,
+			menuView = null,
+			domView = null,
+			attrView = null,
+			pathView = null,
+			activeElement = null,
 			vertResizing = false,
 			horizResizing = false,
+			pathScrolling = null,
 			xPos = 0,
-			nLevel = 0,
 			options = {
-				align: 'right',
-				width: 300,
+				align: 'right',  // NOTE: left is not supported in this version
+				width: 340,
 				minWidth: 260,
 				split: 50,
 				minSplit: 30,
 				visible: true,
 				saving: false,
-				// nodeTypes: {
-				// 	Node.DOCUMENT_NODE : true
-				// 	Node.TEXT_NODE : true,
-				// 	Node.ELEMENT_NODE : true
-				// }
-				nodeTypes: [1, 3, 9]
+				omitEmptyText: true,
+				foldText: true,
+				nodeTypes: [1, 3, 8, 9]
 			};
 
+		// Returns selected element or null
+		function getSelected() {
+			if (!activeElement) {
+				return null;
+			}
 
+			var elem = document,
+				path = JSON.parse(activeElement.getAttribute('data-js-path'));
+
+			if (path[0] !== "") {
+				for (var i = 0, len = path.length; i < len; ++i) {
+					elem = elem.childNodes[path[i]];
+				}
+			}
+
+			return elem;
+		}
 
 		// Loads user defined options stored in HTML5 storage (if available)
 		function loadOptions() {
@@ -250,8 +265,197 @@
 			}
 		}
 
+		// Generates UUID
+		function getUuid() {
+			var i, random,
+				uuid = '';
+
+			for (i = 0; i < 32; i++) {
+				random = Math.random() * 16 | 0;
+				if (i === 8 || i === 12 || i === 16 || i === 20) {
+					uuid += '-';
+				}
+				uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
+			}
+			return uuid;
+		}
+
+		// Returns CSS and JS paths to the element
+		// Result is an object with two variables (cssPath, jsPath) where cssPath is a string
+		// which holds the css path starting from the HTML element, and jsPath is an array which
+		// contains indexes for childNodes arrays (starting at document object).
+		//
+		// Inspired by the selector function from Rochester Oliveira's jQuery plugin
+		// http://rockingcode.com/tutorial/element-dom-tree-jquery-plugin-firebug-like-functionality/
+		function getElemPaths(elem) {
+			if (typeof elem !== 'object') {
+				throw "getElemPaths: Expected argument elem of type object, " + typeof elem + " given.";
+			}
+
+			var css = "",
+				js = "",
+				parent = "",
+				i, len;
+
+			while (elem !== document) {
+				parent = elem.parentNode;
+
+				// javascript selector
+				for (i = 0, len = parent.childNodes.length; i < len; ++i) {
+					if (parent.childNodes[i] === elem) {
+						js = i + "," + js;
+						break;
+					}
+				}
+
+				// CSS selector
+				var cssTmp = elem.nodeName;
+
+				if (elem.id) {
+					cssTmp += '#' + elem.id;
+				}
+
+				if (elem.className) {
+					// use classList if available
+					var classList = elem.classList || elem.className.split(' ');
+
+					for (i = 0, len = classList.length; i < len; ++i) {
+						cssTmp += '.' + classList[i];
+					}
+				}
+
+				css = cssTmp + ' ' + css;
+				elem = elem.parentNode;
+			}
+
+			js = js.slice(0, -1).split(',');
+
+			return {
+				cssPath: css.toLowerCase(),
+				jsPath: js
+			};
+		}
+
+		// Checks if a node has some child nodes and if at least on of them is of a supported type
+		function hasRequiredNodes(node) {
+			if (typeof node !== 'object') {
+				throw "hasRequiredNodes: Expected argument node of type object, " + typeof node + " given.";
+			}
+
+			if (node.hasChildNodes()) {
+				for (var i = 0, len = node.childNodes.length; i < len; i++) {
+					if (options.nodeTypes.indexOf(node.childNodes[i].nodeType) !== -1) {
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		// Checks whether the text node is not empty or contains only the EOL
+		function isEmptyTextNode(node) {
+			if (typeof node !== 'object') {
+				throw "isEmptyTextNode: Expected argument node of type object, " + typeof node + " given.";
+			}
+
+			return (/^\s*$/).test(node.textContent);
+		}
+
+		// Checks whether the node or its children contains only text information
+		function containsOnlyText(node, checkChildren) {
+			if (typeof node !== 'object') {
+				throw "containsOnlyText: Expected argument node of type object, " + typeof node + " given.";
+			}
+
+			checkChildren = checkChildren || false;
+
+			var result = false,
+				nodeTmp = null;
+
+			// does the node contain only text nodes?
+			if (checkChildren) {
+				for (var i = 0, len = node.childNodes.length; i < len; ++i) {
+					nodeTmp = node.childNodes[i];
+					result = nodeTmp.nodeType === Node.TEXT_NODE
+							|| nodeTmp.nodeType === Node.COMMENT_NODE
+							|| nodeTmp.nodeType === Node.CDATA_SECTION_NODE;
+
+					if (!result) {
+						break;
+					}
+				}
+			} else {
+				// check the node type if it doesn't have any children
+				result = node.nodeType === Node.TEXT_NODE
+						|| node.nodeType === Node.COMMENT_NODE
+						|| node.nodeType === Node.CDATA_SECTION_NODE;
+			}
+
+			return result;
+		}
+
+		// Creates a starting markup for a new DOM tree view node
+		function newTreeNode(node) {
+			if (typeof node !== 'object') {
+				throw "newTreeNode: Expected argument node of type object, " + typeof node + " given.";
+			}
+
+			var withChildren = hasRequiredNodes(node),
+				omit = false,
+				elem = newElement('li', {
+					class: (withChildren ? 'adi-node' : '')
+				});
+
+			// do not show ADI DOM nodes in the DOM view
+			if (node === uiView) {
+				return null;
+			}
+
+			// generate UI for elements with children
+			if (withChildren) {
+				elem.appendChild(newElement('span', { class: 'adi-trigger' }));
+			}
+
+			// we can omit empty text nodes if allowed in options
+			if (options.omitEmptyText && node.nodeType === Node.TEXT_NODE) {
+				omit = isEmptyTextNode(node);
+			}
+
+			if (!omit) {
+				var path = getElemPaths(node),
+					content = newElement('span', {
+						'data-css-path' : path.cssPath,
+						'data-js-path'  : JSON.stringify(path.jsPath)
+					});
+
+				if (containsOnlyText(node)) {
+
+					if (node.nodeType === Node.COMMENT_NODE) {
+						addClass(content, 'adi-comment-node');
+						if (typeof content.innerText === 'string') {
+							content.innerText = '<!-- ' + node.textContent + ' -->';
+						} else {
+							content.textContent = '<!-- ' + node.textContent + ' -->';
+						}
+					} else {
+						addClass(content, 'adi-text-node');
+						content.textContent = node.textContent;
+					}
+				} else {
+					addClass(content, 'adi-normal-node');
+					content.textContent = node.nodeName.toLowerCase();
+				}
+
+				elem.appendChild(content);
+				return elem;
+			} else {
+				return null;
+			}
+		}
+
 		// Renders the DOM Tree view
-		function drawDOM(root, isRoot) {
+		function drawDOM(root, elem, isRoot) {
 			// .childElementCount == .children.length
 			// .childNodes <= .hasChildNodes (contains TEXT_NODE nodes)
 
@@ -259,24 +463,50 @@
 				throw "drawDOM: Expected argument root of type object, " + typeof root + " given.";
 			}
 
+			var newNode = null,
+				isOpen = true;
+
 			if (isRoot && options.nodeTypes.indexOf(root.nodeType) !== -1) {
-				console.log(root, nLevel, root.nodeType);
+				// console.log(root, nLevel, root.nodeType);
+				newNode = newTreeNode(root);
+
+				if (hasRequiredNodes(root)) {
+					newNode.appendChild(newElement('ul', { 'data-open' : true }));
+					addClass(newNode.querySelector('.adi-trigger'), 'opened');
+				}
+
+				elem.appendChild(newNode);
+				elem = elem.querySelector('ul');
 			}
 
 			// recursive DOM traversal
 			for (var i = 0, len = root.childNodes.length; i < len; ++i) {
-				var node = root.childNodes[i];
-				nLevel += 1;
+				var node = root.childNodes[i],
+					withChildren = hasRequiredNodes(node);
 
 				// TODO: tree rendering
 				if (options.nodeTypes.indexOf(node.nodeType) !== -1) {
-					console.log(node, nLevel, node.nodeType);
-				}
+					newNode = newTreeNode(node);
 
-				if (node.hasChildNodes()) {
-					drawDOM(node, false);
+					if (newNode) {
+						if (withChildren) {
+							if (options.foldText) {
+								isOpen = containsOnlyText(node, true) ? false : true;
+							} else {
+								isOpen = true;
+							}
+
+							newNode.appendChild(newElement('ul', { 'data-open' : isOpen }));
+							addClass(newNode.querySelector('.adi-trigger'), isOpen ? 'opened' : 'closed');
+						}
+
+						elem.appendChild(newNode);
+
+						if (withChildren) {
+							drawDOM(node, newNode.querySelector('ul'), false);
+						}
+					}
 				}
-				nLevel -= 1;
 			}
 		}
 
@@ -286,15 +516,15 @@
 					id: 'adi-wrapper'
 				}),
 				navi = newElement('div', {
-					id: 'adi-menu'
+					id: 'adi-panel'
 				}),
-				domView = newElement('div', {
+				domViewWrap = newElement('div', {
 					id: 'adi-dom-view'
 				}),
 				domViewContent = newElement('div', {
 					class: 'adi-content'
 				}),
-				attrView = newElement('div', {
+				attrViewWrap = newElement('div', {
 					id: 'adi-attr-view'
 				}),
 				attrViewContent = newElement('div', {
@@ -305,32 +535,50 @@
 				}),
 				vertSplit = newElement('div', {
 					id: 'adi-vert-split'
+				}),
+				domTree = newElement('ul', {
+					class: 'adi-tree-view'
+				}),
+				domPathWrap = newElement('div', {
+					class: 'adi-path-wrap'
+				}),
+				domPath = newElement('div', {
+					class: 'adi-path'
+				}),
+				domPathScrollLeft = newElement('span', {
+					class: 'adi-path-left'
+				}),
+				domPathScrollRight = newElement('span', {
+					class: 'adi-path-right'
 				});
 
-
-			// NOTE: debug only
-			domViewContent.textContent = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci culpa beatae ipsa necessitatibus perferendis iste possimus eius dolorem et aspernatur officiis iure architecto dolorum rerum vitae quaerat harum voluptatibus velit! Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci culpa beatae ipsa necessitatibus perferendis iste possimus eius dolorem et aspernatur officiis iure architecto dolorum rerum vitae quaerat harum voluptatibus velit!';
-			attrViewContent.textContent = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Deserunt itaque et animi dolor corporis qui minus quos maiores cumque voluptates totam voluptas eligendi ad temporibus laboriosam odio blanditiis atque inventore. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Adipisci culpa beatae ipsa necessitatibus perferendis iste possimus eius dolorem et aspernatur officiis iure architecto dolorum rerum vitae quaerat harum voluptatibus velit!';
-
 			// put UI together
-			domView.appendChild(domViewContent);
-			attrView.appendChild(attrViewContent);
-			wrapper.appendChild(domView);
+			domViewContent.appendChild(domTree);
+			domViewWrap.appendChild(domViewContent);
+			attrViewWrap.appendChild(attrViewContent);
+			domPathWrap.appendChild(domPath);
+			domPathWrap.appendChild(domPathScrollLeft);
+			domPathWrap.appendChild(domPathScrollRight);
+			navi.appendChild(domPathWrap);
+			wrapper.appendChild(domViewWrap);
 			wrapper.appendChild(horizSplit);
-			wrapper.appendChild(attrView);
+			wrapper.appendChild(attrViewWrap);
 			wrapper.appendChild(navi);
 			wrapper.appendChild(vertSplit);
 
 			// cache UI object and append to the DOM
 			document.getElementsByTagName('body')[0].appendChild(wrapper);
-			ui = wrapper;
-			menu = navi;
+			uiView = wrapper;
+			menuView = navi;
+			domView = uiView.querySelector('#adi-dom-view');
+			attrView = uiView.querySelector('#adi-attr-view');
+			pathView = domPath;
 			refreshUI(true);
 		}
 
 		// Refreshes the global UI
 		function refreshUI(refreshOpts) {
-			if (ui === null) {
+			if (uiView === null) {
 				return false;
 			}
 
@@ -339,27 +587,24 @@
 				loadOptions();
 			}
 
-			var domView = ui.querySelector('#adi-dom-view'),
-				attrView = ui.querySelector('#adi-attr-view');
-
 			// UI appearance refresh
-			ui.style.display = options.visible ? 'block' : 'none';
-			ui.style.width = options.width + 'px';
-			menu.style.width = options.width + 'px';
+			uiView.style.display = options.visible ? 'block' : 'none';
+			uiView.style.width = options.width + 'px';
+			menuView.style.width = options.width + 'px';
 			domView.style.height = options.split + '%';
 			attrView.style.height = (100 - options.split) + '%';
 			domView.querySelector('.adi-content').style.height = domView.clientHeight + 'px';
-			attrView.querySelector('.adi-content').style.height = (attrView.clientHeight - menu.clientHeight) + 'px';
-			addClass(ui, options.align);
+			attrView.querySelector('.adi-content').style.height = (attrView.clientHeight - menuView.clientHeight) + 'px';
+			addClass(uiView, options.align);
 		}
 
 		// UI visibility toggle handler
 		function toggleVisibilityUI() {
-			if (ui === null) {
+			if (uiView === null) {
 				return false;
 			}
 
-			ui.style.display = options.visible ? 'none' : 'block';
+			uiView.style.display = options.visible ? 'none' : 'block';
 			options.visible = !options.visible;
 			saveOptions();
 		}
@@ -392,6 +637,8 @@
 				refreshUI();
 				saveOptions();
 			}
+
+			checkPathOverflow();
 		}
 
 		// Horizontal splitter resize handler
@@ -402,12 +649,69 @@
 
 			e = e || window.event;
 			document.body.style.cursor = 'n-resize';
-			var nSplit = Math.floor(e.clientY / ui.clientHeight * 100);
+			var nSplit = Math.floor(e.clientY / uiView.clientHeight * 100);
 
 			if (nSplit >= options.minSplit && nSplit <= 100 - options.minSplit) {
 				options.split = nSplit;
 				refreshUI();
 				saveOptions();
+			}
+		}
+
+		// Dom view folding handler
+		function handleFolding(e) {
+			var target = e ? e.target : window.event.srcElement,
+				ul = target.parentNode.querySelector('ul');
+
+			if (ul.getAttribute('data-open') === "true") {
+				removeClass(target, 'opened');
+				addClass(target, 'closed');
+				ul.setAttribute('data-open', "false");
+			} else {
+				removeClass(target, 'closed');
+				addClass(target, 'opened');
+				ul.setAttribute('data-open', "true");
+			}
+		}
+
+		// Handles active element selection
+		function handleActive(e) {
+			var target = e ? e.target : window.event.srcElement,
+				active = domView.querySelector('.adi-active-node');
+
+			if (active) {
+				removeClass(active, 'adi-active-node');
+			}
+
+			activeElement = target;
+			addClass(target, 'adi-active-node');
+			pathView.textContent = target.getAttribute('data-css-path');
+
+			checkPathOverflow();
+		}
+
+		function checkPathOverflow() {
+			if (pathView.scrollWidth > pathView.clientWidth) {
+				addClass(pathView.parentNode, 'adi-overflowing');
+			} else {
+				removeClass(pathView.parentNode, 'adi-overflowing');
+			}
+		}
+
+		function scrollPathView(e) {
+			var target = e ? e.target : window.event.srcElement,
+				maxScroll = pathView.scrollWidth - pathView.clientWidth,
+				scroll = pathView.scrollLeft,
+				change = 5;
+
+				if (target.className === "adi-path-right") {
+					pathView.scrollLeft = (scroll <= maxScroll - change) ? scroll + change : maxScroll;
+				} else {
+					pathView.scrollLeft = (scroll - change >= 0) ? scroll - change : 0;
+				}
+
+			if (!pathScrolling) {
+				pathScrolling = setInterval(scrollPathView, 20, e);
 			}
 		}
 
@@ -433,10 +737,6 @@
 			addEvent(document, 'mouseup', function() {
 				document.body.style.cursor = 'default';
 				vertResizing  = false;
-			}, false);
-
-			addEvent(document, 'mouseup', function() {
-				document.body.style.cursor = 'default';
 				horizResizing = false;
 			}, false);
 
@@ -449,27 +749,43 @@
 			// keypress events
 			addEvent(document, 'keypress', processKey, false);
 
+			// dom tree view folding
+			addEventDelegate(domView, 'click', handleFolding, false, '.adi-trigger');
+
+			// active element
+			addEventDelegate(domView, 'click', handleActive, false, '.adi-normal-node');
+
+			// path view scrolling
+			addEventDelegate(pathView.parentNode, 'mousedown', scrollPathView, false, '.adi-path-left');
+			addEventDelegate(pathView.parentNode, 'mousedown', scrollPathView, false, '.adi-path-right');
+			addEventDelegate(pathView.parentNode, 'mouseup', function() {
+				clearInterval(pathScrolling);
+				pathScrolling = false;
+			}, false, '.adi-path-left');
+			addEventDelegate(pathView.parentNode, 'mouseup', function() {
+				clearInterval(pathScrolling);
+				pathScrolling = false;
+			}, false, '.adi-path-right');
 
 			// TODO: Menu events
-
 		}
 
 		drawUI();
 		registerEvents();
+		drawDOM(document, domView.querySelector('.adi-tree-view'), true);
 
 		return {
 			// TODO: public methods and variables (this will be visible to the global scope)
-			// TODO: getSelectedElement() method
+			getSelectedElement: getSelected,
 			toggle: toggleVisibilityUI,
-			dom: drawDOM,
-			options: options  // FIXME: remove
+			options: options,  // FIXME: remove
+			getPaths: getElemPaths
 		};
 	})();
 
 	// Application entry point
 	function appInit() {
 		consoleShim();
-		// TODO: other invocations if needed
 
 		// make public API visible to the global scope
 		window.ADI = ADI;

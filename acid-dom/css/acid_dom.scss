@@ -14,13 +14,28 @@
 @import "compass/utilities/general/clearfix";
 
 // colors
-$light: #F7F7F7;
+$light: #FAFAFA;
 $activeBlue: #C5D9D8;
 $gray: #D4D4D4;
 $darkGray: #BBC5C9;
 $dark: #768285;
+$text: #444;
+$comment: #999;
+$domNode: #BBE1EC;
+$domNodeActive: #FF7E7E;
+
+// custom variables
+$domViewMargin: 4px 0;
+$domViewNesting: 15px;
 
 // mixins
+@mixin no-selection() {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
 @mixin splitter($orientation: 'horizontal') {
 	@if $orientation == 'horizontal' {
 		height: 4px;
@@ -38,10 +53,8 @@ $dark: #768285;
 	background: $darkGray;
 	border-color: $dark;
 	border-style: solid;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
+
+	@include no-selection;
 
 	&:hover {
 		background: $activeBlue;
@@ -54,6 +67,10 @@ $dark: #768285;
 	height: 100%;
 	top: 0;
 	background: $light;
+	font-family: 'Segoe UI', Arial;
+	font-size: 12px;
+
+	@include no-selection;
 
 	&.left {
 		left: 0;
@@ -64,35 +81,142 @@ $dark: #768285;
 	}
 }
 
-#adi-menu {
+#adi-panel {
 	position: fixed;
 	bottom: 0;
 	right: 0;
-	height: 34px;
+	height: 24px;
 	background: $gray;
-	border-top: 1px solid #fff;
+	border-top: 1px solid $darkGray;
+
+	.adi-path-wrap {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 80%;
+		height: 24px;
+		padding: 0 13px 0 18px;
+		line-height: 24px;
+		overflow: hidden;
+		box-sizing: border-box;
+		-moz-box-sizing: border-box;
+
+		&.adi-overflowing {
+			.adi-path-left,
+			.adi-path-right {
+				display: block;
+			}
+		}
+	}
+
+	.adi-path {
+		height: 24px;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.adi-path-left,
+	.adi-path-right {
+		display: none;
+		position: absolute;
+		top: 4px;
+		width: 8px;
+		height: 16px;
+		background: red;
+	}
+
+	.adi-path-left { left: 8px; }
+	.adi-path-right { right: 3px; }
 }
 
 #adi-dom-view {
 	height: 50%;
-	background: red;  // TODO: remove
 
-	.adi-content {
-		background: yellow;
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		&[data-open=true] {
+			display: block;
+		}
+
+		&[data-open=false] {
+			display: none;
+		}
+
+		ul {
+			margin: $domViewMargin;
+		}
+
+		li {
+			margin: $domViewMargin;
+			padding-left: $domViewNesting;
+		}
+	}
+
+	.adi-normal-node {
+		padding: 0 6px 0px;
+		background: $domNode;
+		border-radius: 8px;
+		cursor: default;
+
+		&.adi-active-node {
+			background: $domNodeActive;
+		}
+	}
+
+	.adi-text-node,
+	.adi-comment-node {
+		display: block;
+		padding: 3px 8px;
+		color: $text;
+		background: #fff;
+		border-radius: 8px;
+
+		-moz-box-shadow: inset 1px 1px 5px 0 $gray;
+		-webkit-box-shadow: inset 1px 1px 5px 0 $gray;
+		box-shadow: inset 1px 1px 5px 0 $gray;
+
+		&:after {
+			content: '"';
+		}
+
+		&:before {
+			content: '"';
+		}
+	}
+
+	.adi-comment-node {
+		color: $comment;
+		font-style: italic;
+	}
+
+	.adi-trigger {
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		margin: 0 5px 0 -13px;
+		cursor: pointer;
+		border-radius: 10px;
+
+		&.closed {
+			background: black;
+		}
+
+		&.opened {
+			background: silver;
+		}
 	}
 }
 
 #adi-attr-view {
 	height: 50%;
-	background: blue;  // TODO: remove
 
-	.adi-content {
-		background: pink;
-	}
 }
 
 #adi-horiz-split {
-	@include splitter();
+	@include splitter;
 }
 
 #adi-vert-split {
@@ -100,9 +224,9 @@ $dark: #768285;
 }
 
 .adi-content {
+	position: relative;
 	padding: 10px 15px;
 	overflow: auto;
 	box-sizing: border-box;
 	-moz-box-sizing: border-box;
 }
-
