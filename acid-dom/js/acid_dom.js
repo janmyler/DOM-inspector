@@ -13,6 +13,9 @@
 (function(window, document, undefined) {
 	'use strict';
 
+	var delegatedEvents = [];
+	window.rtt = delegatedEvents;
+
 	// Console compatibility shim.
 	function consoleShim() {
 		// missing console workaround
@@ -63,20 +66,37 @@
 	// Note that the selector must be a string and no nesting is supported.
 	// Selector is expected to be in one of formats listed below and works for all children
 	// in the particular element.
-	// Selector formats: tag name ("div"), class name (".my-class") and id ("#my-id").
-	function addEventDelegate(elem, evt, fn, capture, selector) {
+	// Store parameter enables storing the reference to custom event handler.
+	// Exclude parameter will exclude the particular element and all of its children, this works
+	// only for id selectors.
+	// Selector formats: tag name ("div"), class name (".my-class"), id ("#my-id") and any ("*").
+	function addEventDelegate(elem, evt, fn, capture, selector, store, exclude) {
 		// custom event handler is registered
-		addEvent(elem, evt, function(e) {
-			// check if the target corresponds to the selector
+		var handler = function(e) {
+			// check if target corresponds to the selector
 			var target = e ? e.target : window.event.srcElement,
 				sel = selector.substr(1),
 				delegate = false;
+
+			if (exclude) {
+				var node = target;
+
+				while (node !== document) {
+					if (node.id === exclude) {
+						return;
+					}
+
+					node = node.parentNode;
+				}
+			}
 
 			// should the event be delegated?
 			if (selector.indexOf('#') === 0) {	// ID
 				delegate = target.id === sel;
 			} else if (selector.indexOf('.') === 0) { // class
 				delegate = target.className.indexOf(sel) !== -1;
+			} else if (selector === '*') { // any
+				delegate = true;
 			} else { // tag name
 				delegate = target.nodeName.toLowerCase() === selector;
 			}
@@ -85,8 +105,62 @@
 			if (delegate) {
 				fn.call(this, e);
 			}
-		}, capture);
+		};
+		// save the reference
+		if (store) {
+			delegatedEvents.push({
+				'handle' : handler,
+				'elem' : elem,
+				'fn' : fn,
+				'evt': evt
+			});
+		}
+
+		// add custom event
+		addEvent(elem, evt, handler, capture);
 	}
+
+	// Simple cross-browser event removing
+	function removeEvent(elem, evt, fn, wasDelegated) {
+		if (typeof elem !== 'object') {
+			throw "addEvent: Expected argument elem of type object, " + typeof elem + " given.";
+		}
+
+		// try to find stored delegated event
+		var stored = null;
+		if (wasDelegated) {
+			for (var i = 0, len = delegatedEvents.length; i < len; ++i) {
+				stored = delegatedEvents[i];
+				if (stored.elem === elem && stored.evt === evt && stored.fn === fn) {
+					fn = stored.handle;
+					delegatedEvents.splice(i, 1);
+					break;
+				}
+			}
+		}
+
+		if (window.addEventListener) {
+			elem.removeEventListener(evt, fn, false);
+		} else {
+			elem.dettachEvent('on' + evt, fn);
+		}
+	}
+
+	// FIXME: remove?
+	// Simple cross-browser click event triggering
+	// function triggerClick(elem) {
+	// 	if (typeof elem !== 'object') {
+	// 		throw "triggerEvent: Expected argument elem of type object, " + typeof elem + " given.";
+	// 	}
+
+	// 	var e;
+	// 	if (document.createEvent) {
+	// 		e = document.createEvent('MouseEvents');
+	// 		e.initMouseEvent('click');
+	// 	}
+
+	// 	e ? elem.dispatchEvent(e) : (elem.click && elem.click());
+	// }
 
 	// Stops event propagation and also prevents the default behavior.
 	function pauseEvent(e){
@@ -205,6 +279,8 @@
 			vertResizing = false,
 			horizResizing = false,
 			pathScrolling = null,
+			elemLookup = false,
+			styleBackup = '',
 			xPos = 0,
 			options = {
 				align: 'right',  // NOTE: left is not supported in this version
@@ -215,6 +291,7 @@
 				visible: true,
 				saving: false,
 				omitEmptyText: true,
+				makeVisible: true,
 				foldText: true,
 				nodeTypes: [1, 3, 8, 9]
 			};
@@ -263,21 +340,6 @@
 			if (supported('localStorage')) {
 				localStorage.removeItem('ADI.options');
 			}
-		}
-
-		// Generates UUID
-		function getUuid() {
-			var i, random,
-				uuid = '';
-
-			for (i = 0; i < 32; i++) {
-				random = Math.random() * 16 | 0;
-				if (i === 8 || i === 12 || i === 16 || i === 20) {
-					uuid += '-';
-				}
-				uuid += (i === 12 ? 4 : (i === 16 ? (random & 3 | 8) : random)).toString(16);
-			}
-			return uuid;
 		}
 
 		// Returns CSS and JS paths to the element
@@ -424,30 +486,45 @@
 
 			if (!omit) {
 				var path = getElemPaths(node),
-					content = newElement('span', {
+					tagStart = newElement('span', {
 						'data-css-path' : path.cssPath,
 						'data-js-path'  : JSON.stringify(path.jsPath)
-					});
+					}),
+					tagEnd = null;
 
 				if (containsOnlyText(node)) {
 
 					if (node.nodeType === Node.COMMENT_NODE) {
-						addClass(content, 'adi-comment-node');
-						if (typeof content.innerText === 'string') {
-							content.innerText = '<!-- ' + node.textContent + ' -->';
+						addClass(tagStart, 'adi-comment-node');
+						if (typeof tagStart.innerText === 'string') {
+							tagStart.innerText = '<!-- ' + node.textContent + ' -->';
 						} else {
-							content.textContent = '<!-- ' + node.textContent + ' -->';
+							tagStart.textContent = '<!-- ' + node.textContent + ' -->';
 						}
 					} else {
-						addClass(content, 'adi-text-node');
-						content.textContent = node.textContent;
+						addClass(tagStart, 'adi-text-node');
+						tagStart.textContent = node.textContent;
 					}
 				} else {
-					addClass(content, 'adi-normal-node');
-					content.textContent = node.nodeName.toLowerCase();
+					addClass(tagStart, 'adi-normal-node');
+					if (node.nodeType !== Node.DOCUMENT_NODE) {
+						tagStart.textContent = '<' + node.nodeName.toLowerCase() + '>';
+
+						if (withChildren) {
+							tagEnd = newElement('span');
+							addClass(tagEnd, 'adi-end-node');
+							tagEnd.textContent = '</' + node.nodeName.toLowerCase() + '>';
+						}
+					} else {
+						tagStart.textContent = node.nodeName.toLowerCase();
+					}
 				}
 
-				elem.appendChild(content);
+				elem.appendChild(tagStart);
+				if (tagEnd) {
+					elem.appendChild(tagEnd);
+				}
+
 				return elem;
 			} else {
 				return null;
@@ -456,9 +533,6 @@
 
 		// Renders the DOM Tree view
 		function drawDOM(root, elem, isRoot) {
-			// .childElementCount == .children.length
-			// .childNodes <= .hasChildNodes (contains TEXT_NODE nodes)
-
 			if (typeof root !== 'object') {
 				throw "drawDOM: Expected argument root of type object, " + typeof root + " given.";
 			}
@@ -484,7 +558,6 @@
 				var node = root.childNodes[i],
 					withChildren = hasRequiredNodes(node);
 
-				// TODO: tree rendering
 				if (options.nodeTypes.indexOf(node.nodeType) !== -1) {
 					newNode = newTreeNode(node);
 
@@ -496,7 +569,12 @@
 								isOpen = true;
 							}
 
-							newNode.appendChild(newElement('ul', { 'data-open' : isOpen }));
+							if (node.nodeType === Node.DOCUMENT_NODE) {
+								newNode.appendChild(newElement('ul', { 'data-open' : isOpen }));
+							} else {
+								newNode.insertBefore(newElement('ul', { 'data-open' : isOpen }), newNode.lastChild);
+							}
+
 							addClass(newNode.querySelector('.adi-trigger'), isOpen ? 'opened' : 'closed');
 						}
 
@@ -512,45 +590,22 @@
 
 		// Renders the UI
 		function drawUI() {
-			var wrapper = newElement('div', {
-					id: 'adi-wrapper'
-				}),
-				navi = newElement('div', {
-					id: 'adi-panel'
-				}),
-				domViewWrap = newElement('div', {
-					id: 'adi-dom-view'
-				}),
-				domViewContent = newElement('div', {
-					class: 'adi-content'
-				}),
-				attrViewWrap = newElement('div', {
-					id: 'adi-attr-view'
-				}),
-				attrViewContent = newElement('div', {
-					class: 'adi-content'
-				}),
-				horizSplit = newElement('div', {
-					id: 'adi-horiz-split'
-				}),
-				vertSplit = newElement('div', {
-					id: 'adi-vert-split'
-				}),
-				domTree = newElement('ul', {
-					class: 'adi-tree-view'
-				}),
-				domPathWrap = newElement('div', {
-					class: 'adi-path-wrap'
-				}),
-				domPath = newElement('div', {
-					class: 'adi-path'
-				}),
-				domPathScrollLeft = newElement('span', {
-					class: 'adi-path-left'
-				}),
-				domPathScrollRight = newElement('span', {
-					class: 'adi-path-right'
-				});
+			var wrapper = newElement('div', { id: 'adi-wrapper' }),
+				domViewWrap = newElement('div', { id: 'adi-dom-view' }),
+				domViewContent = newElement('div', { class: 'adi-content' }),
+				attrViewWrap = newElement('div', { id: 'adi-attr-view' }),
+				attrViewContent = newElement('div', { class: 'adi-content' }),
+				horizSplit = newElement('div', { id: 'adi-horiz-split' }),
+				vertSplit = newElement('div', {	id: 'adi-vert-split' }),
+				domTree = newElement('ul', { class: 'adi-tree-view'	}),
+				domPathWrap = newElement('div', { class: 'adi-path-wrap' }),
+				domPath = newElement('div', { class: 'adi-path'	}),
+				domPathScrollLeft = newElement('span', { class: 'adi-path-left'	}),
+				domPathScrollRight = newElement('span', { class: 'adi-path-right' }),
+				naviWrap = newElement('div', { id: 'adi-panel' }),
+				naviButtons = newElement('div', { class: 'adi-menu-wrap' }),
+				naviConfig = newElement('a', { class: 'adi-menu-config' }),
+				naviLookup = newElement('a', { class: 'adi-menu-lookup' });
 
 			// put UI together
 			domViewContent.appendChild(domTree);
@@ -559,17 +614,20 @@
 			domPathWrap.appendChild(domPath);
 			domPathWrap.appendChild(domPathScrollLeft);
 			domPathWrap.appendChild(domPathScrollRight);
-			navi.appendChild(domPathWrap);
+			naviButtons.appendChild(naviLookup);
+			naviButtons.appendChild(naviConfig);
+			naviWrap.appendChild(domPathWrap);
+			naviWrap.appendChild(naviButtons);
 			wrapper.appendChild(domViewWrap);
 			wrapper.appendChild(horizSplit);
 			wrapper.appendChild(attrViewWrap);
-			wrapper.appendChild(navi);
+			wrapper.appendChild(naviWrap);
 			wrapper.appendChild(vertSplit);
 
 			// cache UI object and append to the DOM
 			document.getElementsByTagName('body')[0].appendChild(wrapper);
 			uiView = wrapper;
-			menuView = navi;
+			menuView = naviWrap;
 			domView = uiView.querySelector('#adi-dom-view');
 			attrView = uiView.querySelector('#adi-attr-view');
 			pathView = domPath;
@@ -628,7 +686,7 @@
 			}
 
 			e = e || window.event;
-			document.body.style.cursor = 'e-resize';
+			document.documentElement.style.cursor = 'e-resize';
 			var nWidth = options.width + xPos - e.clientX;
 
 			if (nWidth >= options.minWidth) {
@@ -648,7 +706,7 @@
 			}
 
 			e = e || window.event;
-			document.body.style.cursor = 'n-resize';
+			document.documentElement.style.cursor = 'n-resize';
 			var nSplit = Math.floor(e.clientY / uiView.clientHeight * 100);
 
 			if (nSplit >= options.minSplit && nSplit <= 100 - options.minSplit) {
@@ -683,13 +741,27 @@
 				removeClass(active, 'adi-active-node');
 			}
 
+			// clicked on normal-node or end-node?
+			if (target.className === 'adi-end-node') {
+				target = target.parentNode.querySelector('.adi-normal-node');
+			}
+
 			activeElement = target;
 			addClass(target, 'adi-active-node');
 			pathView.textContent = target.getAttribute('data-css-path');
 
+			// make it visible (scroll)
+			if (options.makeVisible) {
+				var wrap = domView.querySelector('.adi-content');
+				if (target.offsetTop >= wrap.clientHeight || target.offsetTop <= wrap.scrollTop) {
+					wrap.scrollTop = target.offsetTop - (Math.floor(wrap.clientHeight / 2));
+				}
+			}
+
 			checkPathOverflow();
 		}
 
+		// Checks if pathView is overflowing or not
 		function checkPathOverflow() {
 			if (pathView.scrollWidth > pathView.clientWidth) {
 				addClass(pathView.parentNode, 'adi-overflowing');
@@ -698,6 +770,7 @@
 			}
 		}
 
+		// Handles scroll behavior for overflowing pathView
 		function scrollPathView(e) {
 			var target = e ? e.target : window.event.srcElement,
 				maxScroll = pathView.scrollWidth - pathView.clientWidth,
@@ -712,6 +785,105 @@
 
 			if (!pathScrolling) {
 				pathScrolling = setInterval(scrollPathView, 20, e);
+			}
+		}
+
+		// Highlights an element on page
+		function highlightElement(e) {
+			var target = e ? e.target : window.event.srcElement,
+				node = document,
+				path;
+
+			if (target.className === 'adi-end-node') {
+				target = target.parentNode.querySelector('.adi-normal-node');
+			}
+
+			path = JSON.parse(target.getAttribute('data-js-path'));
+
+			// find the element
+			for (var i = 0, len = path.length; i < len; ++i) {
+				node = node.childNodes[path[i]];
+			}
+
+			if (node) {
+				if (e.type === 'mouseover') {
+					styleBackup = node.getAttribute('style') || '';
+					node.setAttribute('style', 'outline: 1px dashed red; ' + styleBackup);
+				} else {
+					node.setAttribute('style', styleBackup);
+				}
+			}
+		}
+
+		// Handles element lookup on page
+		function handleLookup(e) {
+			var target = e ? e.target : window.event.srcElement;
+
+			if (target.className.indexOf('adi-menu-lookup') !== -1) {
+				// enable/disable interactive lookup
+				if (elemLookup) {
+					removeClass(target, 'adi-active');
+					elemLookup = false;
+					removeEvent(document.body, 'mouseover', handleLookup, true);
+					removeEvent(document.body, 'mouseout', handleLookup, true);
+					removeEvent(document.body, 'click', handleLookup, true);
+				} else {
+					addClass(target, 'adi-active');
+					elemLookup = true;
+					addEventDelegate(document.body, 'mouseover', handleLookup, false, '*', true, 'adi-wrapper');
+					addEventDelegate(document.body, 'mouseout', handleLookup, false, '*', true, 'adi-wrapper');
+					addEventDelegate(document.body, 'click', handleLookup, false, '*', true, 'adi-wrapper');
+				}
+			} else {
+				// handle lookup events
+				if (e.type === 'mouseover') {
+					styleBackup = target.getAttribute('style') || '';
+					target.setAttribute('style', 'outline: 1px dashed red; ' + styleBackup);
+				} else if (e.type === 'mouseout') {
+					target.setAttribute('style', styleBackup);
+				} else {
+					elemLookup = false;
+					removeClass(menuView.querySelector('.adi-menu-lookup'), 'adi-active');
+					target.setAttribute('style', styleBackup);
+					removeEvent(document.body, 'mouseover', handleLookup, true);
+					removeEvent(document.body, 'mouseout', handleLookup, true);
+					removeEvent(document.body, 'click', handleLookup, true);
+					pauseEvent(e);
+
+					// find corresponding node in the DOM view
+					var path = getElemPaths(target),
+						active = domView.querySelector('[data-css-path="' + path.cssPath + '"]');
+
+					// activate it
+					if (active) {
+						active.click();
+					}
+
+					// open the whole path in DOM view
+					var node = active.parentNode,
+						tmp;
+					while(node !== domView.querySelector('.adi-content')) {
+						console.log(node);
+						if (node.className.indexOf('adi-node') !== -1) {
+							tmp = node.querySelector('.adi-trigger');
+							removeClass(tmp, 'closed');
+							addClass(tmp, 'opened');
+
+							node = node.parentNode;	// ul node
+							node.setAttribute('data-open', 'true');
+						}
+
+						node = node.parentNode;
+					}
+
+					// make it visible (scroll)
+					if (options.makeVisible) {
+						var wrap = domView.querySelector('.adi-content');
+						if (active.offsetTop >= wrap.clientHeight || active.offsetTop <= wrap.scrollTop) {
+							wrap.scrollTop = active.offsetTop - (Math.floor(wrap.clientHeight / 2));
+						}
+					}
+				}
 			}
 		}
 
@@ -735,7 +907,7 @@
 			}, false);
 
 			addEvent(document, 'mouseup', function() {
-				document.body.style.cursor = 'default';
+				document.documentElement.style.cursor = 'default';
 				vertResizing  = false;
 				horizResizing = false;
 			}, false);
@@ -754,6 +926,7 @@
 
 			// active element
 			addEventDelegate(domView, 'click', handleActive, false, '.adi-normal-node');
+			addEventDelegate(domView, 'click', handleActive, false, '.adi-end-node');
 
 			// path view scrolling
 			addEventDelegate(pathView.parentNode, 'mousedown', scrollPathView, false, '.adi-path-left');
@@ -766,6 +939,25 @@
 				clearInterval(pathScrolling);
 				pathScrolling = false;
 			}, false, '.adi-path-right');
+
+			// matching tag highlighting
+			addEventDelegate(domView, 'mouseover', function(e) {
+				var target = e ? e.target : window.event.srcElement;
+				addClass(target.parentNode.querySelector('.adi-normal-node'), 'hover');
+			}, false, '.adi-end-node');
+			addEventDelegate(domView, 'mouseout', function(e) {
+				var target = e ? e.target : window.event.srcElement;
+				removeClass(target.parentNode.querySelector('.adi-normal-node'), 'hover');
+			}, false, '.adi-end-node');
+
+			// page element highlighting
+			addEventDelegate(domView, 'mouseover', highlightElement, false, '.adi-end-node');
+			addEventDelegate(domView, 'mouseover', highlightElement, false, '.adi-normal-node');
+			addEventDelegate(domView, 'mouseout', highlightElement, false, '.adi-end-node');
+			addEventDelegate(domView, 'mouseout', highlightElement, false, '.adi-normal-node');
+
+			// element lookup
+			addEvent(menuView.querySelector('.adi-menu-lookup'), 'click', handleLookup, false);
 
 			// TODO: Menu events
 		}

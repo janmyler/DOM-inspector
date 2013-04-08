@@ -9,6 +9,20 @@
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  */
+body {
+  -webkit-animation: bugfix infinite 1s;
+}
+
+@-webkit-keyframes bugfix {
+  from {
+    padding: 0;
+  }
+
+  to {
+    padding: 0;
+  }
+}
+
 #adi-wrapper {
   position: fixed;
   height: 100%;
@@ -72,6 +86,30 @@
 #adi-panel .adi-path-right {
   right: 3px;
 }
+#adi-panel .adi-menu-wrap {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 50px;
+  height: 24px;
+}
+#adi-panel .adi-menu-lookup,
+#adi-panel .adi-menu-config {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-left: 1px solid #bbc5c9;
+  float: left;
+}
+#adi-panel .adi-menu-lookup {
+  background: yellow;
+}
+#adi-panel .adi-menu-lookup:hover {
+  background: orange;
+}
+#adi-panel .adi-menu-lookup.adi-active {
+  background: red;
+}
 
 #adi-dom-view {
   height: 50%;
@@ -94,13 +132,30 @@
   margin: 4px 0;
   padding-left: 15px;
 }
-#adi-dom-view .adi-normal-node {
+#adi-dom-view .adi-normal-node,
+#adi-dom-view .adi-end-node {
+  margin-right: 5px;
   padding: 0 6px 0px;
-  background: #bbe1ec;
+  background: #d2e8ff;
   border-radius: 8px;
   cursor: default;
 }
-#adi-dom-view .adi-normal-node.adi-active-node {
+#adi-dom-view .adi-normal-node:hover, #adi-dom-view .adi-normal-node.hover,
+#adi-dom-view .adi-end-node:hover,
+#adi-dom-view .adi-end-node.hover {
+  background: #ffcc62;
+}
+#adi-dom-view .adi-normal-node:hover ~ span, #adi-dom-view .adi-normal-node.hover ~ span,
+#adi-dom-view .adi-end-node:hover ~ span,
+#adi-dom-view .adi-end-node.hover ~ span {
+  background: #ffcc62;
+}
+#adi-dom-view .adi-normal-node.adi-active-node,
+#adi-dom-view .adi-end-node.adi-active-node {
+  background: #ff7e7e;
+}
+#adi-dom-view .adi-normal-node.adi-active-node ~ span,
+#adi-dom-view .adi-end-node.adi-active-node ~ span {
   background: #ff7e7e;
 }
 #adi-dom-view .adi-text-node,
@@ -110,9 +165,6 @@
   color: #444444;
   background: #fff;
   border-radius: 8px;
-  -moz-box-shadow: inset 1px 1px 5px 0 #d4d4d4;
-  -webkit-box-shadow: inset 1px 1px 5px 0 #d4d4d4;
-  box-shadow: inset 1px 1px 5px 0 #d4d4d4;
 }
 #adi-dom-view .adi-text-node:after,
 #adi-dom-view .adi-comment-node:after {

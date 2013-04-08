@@ -21,7 +21,8 @@ $darkGray: #BBC5C9;
 $dark: #768285;
 $text: #444;
 $comment: #999;
-$domNode: #BBE1EC;
+$domNode: #D2E8FF;
+$domNodeHover: #FFCC62;
 $domNodeActive: #FF7E7E;
 
 // custom variables
@@ -60,6 +61,10 @@ $domViewNesting: 15px;
 		background: $activeBlue;
 	}
 }
+
+// Webkit fix for sibling selector on hover
+body { -webkit-animation: bugfix infinite 1s; }
+@-webkit-keyframes bugfix { from { padding: 0; } to { padding: 0; } }
 
 // layout
 #adi-wrapper {
@@ -127,6 +132,35 @@ $domViewNesting: 15px;
 
 	.adi-path-left { left: 8px; }
 	.adi-path-right { right: 3px; }
+
+	.adi-menu-wrap {
+		position: absolute;
+		bottom: 0;
+		right: 0;
+		width: 50px;
+		height: 24px;
+	}
+
+	.adi-menu-lookup,
+	.adi-menu-config {
+		display: block;
+		width: 24px;
+		height: 24px;
+		border-left: 1px solid $darkGray;
+		float: left;
+	}
+
+	.adi-menu-lookup {
+		background: yellow;
+
+		&:hover {
+			background: orange;
+		}
+
+		&.adi-active {
+			background: red;
+		}
+	}
 }
 
 #adi-dom-view {
@@ -155,14 +189,28 @@ $domViewNesting: 15px;
 		}
 	}
 
-	.adi-normal-node {
+	.adi-normal-node,
+	.adi-end-node {
+		margin-right: 5px;
 		padding: 0 6px 0px;
 		background: $domNode;
 		border-radius: 8px;
 		cursor: default;
 
+		&:hover, &.hover {
+			background: $domNodeHover;
+
+			& ~ span {
+				background: $domNodeHover;
+			}
+		}
+
 		&.adi-active-node {
 			background: $domNodeActive;
+
+			& ~ span {
+				background: $domNodeActive;
+			}
 		}
 	}
 
@@ -174,9 +222,9 @@ $domViewNesting: 15px;
 		background: #fff;
 		border-radius: 8px;
 
-		-moz-box-shadow: inset 1px 1px 5px 0 $gray;
-		-webkit-box-shadow: inset 1px 1px 5px 0 $gray;
-		box-shadow: inset 1px 1px 5px 0 $gray;
+		// -moz-box-shadow: inset 1px 1px 5px 0 $gray;
+		// -webkit-box-shadow: inset 1px 1px 5px 0 $gray;
+		// box-shadow: inset 1px 1px 5px 0 $gray;
 
 		&:after {
 			content: '"';
