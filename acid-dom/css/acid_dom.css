@@ -75,16 +75,19 @@ body {
 #adi-panel .adi-path-right {
   display: none;
   position: absolute;
-  top: 4px;
+  top: 0;
   width: 8px;
-  height: 16px;
-  background: red;
+  height: 24px;
+  background-repeat: no-repeat;
+  background-position: center center;
 }
 #adi-panel .adi-path-left {
-  left: 8px;
+  left: 7px;
+  background-image: url('../img/left_shift.png?1365460988');
 }
 #adi-panel .adi-path-right {
-  right: 3px;
+  right: 2px;
+  background-image: url('../img/right_shift.png?1365460967');
 }
 #adi-panel .adi-menu-wrap {
   position: absolute;
@@ -96,19 +99,26 @@ body {
 #adi-panel .adi-menu-lookup,
 #adi-panel .adi-menu-config {
   display: block;
+  float: left;
   width: 24px;
   height: 24px;
   border-left: 1px solid #bbc5c9;
-  float: left;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+#adi-panel .adi-menu-lookup:hover,
+#adi-panel .adi-menu-config:hover {
+  background-color: #c5d9d8;
+}
+#adi-panel .adi-menu-lookup.adi-active,
+#adi-panel .adi-menu-config.adi-active {
+  background-color: #fafafa;
 }
 #adi-panel .adi-menu-lookup {
-  background: yellow;
+  background-image: url('../img/lookup.png?1365460864');
 }
-#adi-panel .adi-menu-lookup:hover {
-  background: orange;
-}
-#adi-panel .adi-menu-lookup.adi-active {
-  background: red;
+#adi-panel .adi-menu-config {
+  background-image: url('../img/config.png?1365460887');
 }
 
 #adi-dom-view {
@@ -180,17 +190,15 @@ body {
 }
 #adi-dom-view .adi-trigger {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   margin: 0 5px 0 -13px;
-  cursor: pointer;
-  border-radius: 10px;
 }
 #adi-dom-view .adi-trigger.closed {
-  background: black;
+  background: url('../img/node_closed.png?1365461059') no-repeat;
 }
 #adi-dom-view .adi-trigger.opened {
-  background: silver;
+  background: url('../img/node_opened.png?1365461113') no-repeat;
 }
 
 #adi-attr-view {

@@ -146,22 +146,6 @@
 		}
 	}
 
-	// FIXME: remove?
-	// Simple cross-browser click event triggering
-	// function triggerClick(elem) {
-	// 	if (typeof elem !== 'object') {
-	// 		throw "triggerEvent: Expected argument elem of type object, " + typeof elem + " given.";
-	// 	}
-
-	// 	var e;
-	// 	if (document.createEvent) {
-	// 		e = document.createEvent('MouseEvents');
-	// 		e.initMouseEvent('click');
-	// 	}
-
-	// 	e ? elem.dispatchEvent(e) : (elem.click && elem.click());
-	// }
-
 	// Stops event propagation and also prevents the default behavior.
 	function pauseEvent(e){
 		if(e.stopPropagation) {
@@ -863,7 +847,6 @@
 					var node = active.parentNode,
 						tmp;
 					while(node !== domView.querySelector('.adi-content')) {
-						console.log(node);
 						if (node.className.indexOf('adi-node') !== -1) {
 							tmp = node.querySelector('.adi-trigger');
 							removeClass(tmp, 'closed');

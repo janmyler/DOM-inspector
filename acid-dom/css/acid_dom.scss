@@ -124,14 +124,22 @@ body { -webkit-animation: bugfix infinite 1s; }
 	.adi-path-right {
 		display: none;
 		position: absolute;
-		top: 4px;
+		top: 0;
 		width: 8px;
-		height: 16px;
-		background: red;
+		height: 24px;
+		background-repeat: no-repeat;
+		background-position: center center;
 	}
 
-	.adi-path-left { left: 8px; }
-	.adi-path-right { right: 3px; }
+	.adi-path-left {
+		left: 7px;
+		background-image: image-url('left_shift.png');
+	}
+
+	.adi-path-right {
+		right: 2px;
+		background-image: image-url('right_shift.png');
+	}
 
 	.adi-menu-wrap {
 		position: absolute;
@@ -144,22 +152,28 @@ body { -webkit-animation: bugfix infinite 1s; }
 	.adi-menu-lookup,
 	.adi-menu-config {
 		display: block;
+		float: left;
 		width: 24px;
 		height: 24px;
 		border-left: 1px solid $darkGray;
-		float: left;
-	}
-
-	.adi-menu-lookup {
-		background: yellow;
+		background-position: center center;
+		background-repeat: no-repeat;
 
 		&:hover {
-			background: orange;
+			background-color: $activeBlue;
 		}
 
 		&.adi-active {
-			background: red;
+			background-color: $light;
 		}
+	}
+
+	.adi-menu-lookup {
+		background-image: image-url('lookup.png');
+	}
+
+	.adi-menu-config {
+		background-image: image-url('config.png');
 	}
 }
 
@@ -242,18 +256,16 @@ body { -webkit-animation: bugfix infinite 1s; }
 
 	.adi-trigger {
 		display: inline-block;
-		width: 8px;
-		height: 8px;
+		width: 10px;
+		height: 10px;
 		margin: 0 5px 0 -13px;
-		cursor: pointer;
-		border-radius: 10px;
 
 		&.closed {
-			background: black;
+			background: image-url('node_closed.png') no-repeat;
 		}
 
 		&.opened {
-			background: silver;
+			background: image-url('node_opened.png') no-repeat;
 		}
 	}
 }
