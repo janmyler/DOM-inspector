@@ -1,0 +1,372 @@
+/**
+ * SASS stylesheet for AcID DOM Inspector plugin.
+ *
+ * @file        acid_dom.scss
+ * @author      Jan Myler <info@janmyler.com>
+ * @copyright   Copyright 2013, Jan Myler (http://janmyler.com)
+ * @license     MIT License (http://www.opensource.org/licenses/mit-license.php)
+ *
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ */
+
+@import "compass/css3";
+@import "compass/utilities/general/clearfix";
+
+// colors
+$light: #FAFAFA;
+$lightA: rgba(250, 250, 250, 0.9);
+$activeBlue: #C5D9D8;
+$gray: #D4D4D4;
+$darkGray: #BBC5C9;
+$dark: #768285;
+$text: #444;
+$comment: #999;
+$domNode: #D2E8FF;
+$domNodeHover: #FFCC62;
+$domNodeActive: #FF7E7E;
+
+// custom variables
+$domViewMargin: 4px 0;
+$domViewNesting: 15px;
+
+// mixins
+@mixin no-selection() {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+@mixin splitter($orientation: 'horizontal') {
+	@if $orientation == 'horizontal' {
+		height: 4px;
+		cursor: n-resize;
+		border-width: 0 0 1px 0;
+	} @else {
+		position: fixed;
+		top: 0;
+		width: 4px;
+		height: 100%;
+		cursor: e-resize;
+		border-width: 0 1px 0 0;
+	}
+
+	background: $darkGray;
+	border-color: $dark;
+	border-style: solid;
+
+	@include no-selection;
+
+	&:hover {
+		background: $activeBlue;
+	}
+}
+
+// Webkit fix for sibling selector on hover
+body { -webkit-animation: bugfix infinite 1s; }
+@-webkit-keyframes bugfix { from { padding: 0; } to { padding: 0; } }
+
+// layout
+#adi-wrapper {
+	position: fixed;
+	height: 100%;
+	top: 0;
+	background: $light;
+	font-family: 'Segoe UI', Arial;
+	font-size: 12px;
+
+	@include no-selection;
+
+	&.left {
+		left: 0;
+	}
+
+	&.right {
+		right: 0;
+	}
+
+	&.transparent {
+		background: $lightA;
+	}
+}
+
+#adi-panel {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+	height: 24px;
+	background: $gray;
+	border-top: 1px solid $darkGray;
+
+	.adi-path-wrap {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 80%;
+		height: 24px;
+		padding: 0 13px 0 18px;
+		line-height: 24px;
+		overflow: hidden;
+		box-sizing: border-box;
+		-moz-box-sizing: border-box;
+
+		&.adi-overflowing {
+			.adi-path-left,
+			.adi-path-right {
+				display: block;
+			}
+		}
+	}
+
+	.adi-path {
+		height: 24px;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.adi-path-left,
+	.adi-path-right {
+		display: none;
+		position: absolute;
+		top: 0;
+		width: 8px;
+		height: 24px;
+		background-repeat: no-repeat;
+		background-position: center center;
+		opacity: .7;
+
+		&:hover {
+			opacity: 1;
+		}
+	}
+
+	.adi-path-left {
+		left: 7px;
+		background-image: image-url('left_shift.png');
+	}
+
+	.adi-path-right {
+		right: 2px;
+		background-image: image-url('right_shift.png');
+	}
+
+	.adi-menu-wrap {
+		position: absolute;
+		bottom: 0;
+		right: 0;
+		width: 50px;
+		height: 24px;
+	}
+
+	.adi-menu-lookup,
+	.adi-menu-config {
+		display: block;
+		float: left;
+		width: 24px;
+		height: 24px;
+		border-left: 1px solid $darkGray;
+		background-position: center center;
+		background-repeat: no-repeat;
+		opacity: .7;
+
+		&:hover {
+			background-color: $activeBlue;
+			opacity: 1;
+		}
+
+		&.adi-active {
+			background-color: $light;
+			opacity: 1;
+		}
+	}
+
+	.adi-menu-lookup {
+		background-image: image-url('lookup.png');
+	}
+
+	.adi-menu-config {
+		background-image: image-url('config.png');
+	}
+}
+
+#adi-dom-view {
+	height: 50%;
+
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		&[data-open=true] {
+			display: block;
+		}
+
+		&[data-open=false] {
+			display: none;
+		}
+
+		ul {
+			margin: $domViewMargin;
+		}
+
+		li {
+			margin: $domViewMargin;
+			padding-left: $domViewNesting;
+		}
+	}
+
+	.adi-normal-node,
+	.adi-end-node {
+		margin-right: 5px;
+		padding: 0 6px 0px;
+		background: $domNode;
+		border-radius: 8px;
+		cursor: default;
+
+		&:hover, &.hover {
+			background: $domNodeHover;
+
+			& ~ span {
+				background: $domNodeHover;
+			}
+		}
+
+		&.adi-active-node {
+			background: $domNodeActive;
+
+			& ~ span {
+				background: $domNodeActive;
+			}
+		}
+	}
+
+	.adi-text-node,
+	.adi-comment-node {
+		display: block;
+		padding: 3px 8px;
+		color: $text;
+		background: #fff;
+		border-radius: 8px;
+
+		// -moz-box-shadow: inset 1px 1px 5px 0 $gray;
+		// -webkit-box-shadow: inset 1px 1px 5px 0 $gray;
+		// box-shadow: inset 1px 1px 5px 0 $gray;
+
+		&:after {
+			content: '"';
+		}
+
+		&:before {
+			content: '"';
+		}
+	}
+
+	.adi-comment-node {
+		color: $comment;
+		font-style: italic;
+	}
+
+	.adi-trigger {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		margin: 0 5px 0 -13px;
+		opacity: .7;
+
+		&.closed {
+			background: image-url('node_closed.png') no-repeat;
+		}
+
+		&.opened {
+			background: image-url('node_opened.png') no-repeat;
+		}
+
+		&:hover {
+			opacity: 1;
+		}
+	}
+}
+
+#adi-opts-view {
+	position: relative;
+	height: 100%;
+	padding: 0 15px;
+	background: #fff;
+
+	&.adi-hidden {
+		display: none;
+	}
+
+	.adi-opt-heading,
+	.adi-opt {
+		display: block;
+		padding: 5px 0;
+	}
+
+	.adi-opt-heading {
+		padding: 20px 0 10px;
+		font-size: 15px;
+
+		&:first-child {
+			padding-top: 10px;
+		}
+	}
+
+	.adi-opt {
+		input {
+			margin-right: 6px;
+		}
+	}
+
+	.adi-opt-close {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		width: 16px;
+		height: 16px;
+		background: image-url("options_close.png") no-repeat;
+		opacity: .7;
+
+		&:hover {
+			opacity: 1;
+		}
+
+	}
+}
+
+#adi-attr-view {
+	height: 50%;
+
+	.adi-attr {
+		display: block;
+		padding: 5px 0;
+	}
+
+	hr {
+		height: 1px;
+		border: none;
+	}
+
+	input[type=text] {
+		width: 100%;
+		margin-top: 3px;
+		padding: 2px;
+	}
+}
+
+#adi-horiz-split {
+	@include splitter;
+}
+
+#adi-vert-split {
+	@include splitter('vertical');
+}
+
+.adi-content {
+	position: relative;
+	padding: 10px 15px;
+	overflow: auto;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
