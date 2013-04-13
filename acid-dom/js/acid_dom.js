@@ -580,9 +580,10 @@
 				removeClass(optsView, 'adi-hidden');
 			} else {
 				addClass(optsView, 'adi-hidden');
+				pathView.textContent = '';
+				attrView.querySelector('.adi-content').innerHTML = '';
 				refreshUI();
 				drawDOM(document, domView.querySelector('.adi-tree-view'), true);
-
 				options.saveOptions ? saveOptions() : resetOptions();
 			}
 		}
@@ -606,11 +607,11 @@
 			head2.textContent = 'Observed nodes';
 
 			ui.appendChild(head1);
-			ui.appendChild(drawOptionRow('transparent', 'Enable transparent background'));
 			ui.appendChild(drawOptionRow('saving', 'Enable saving of settings'));
-			ui.appendChild(drawOptionRow('omitEmptyText', 'Hide empty text nodes'));
 			ui.appendChild(drawOptionRow('makeVisible', 'Scroll to the active element in DOM View'));
+			ui.appendChild(drawOptionRow('omitEmptyText', 'Hide empty text nodes'));
 			ui.appendChild(drawOptionRow('foldText', 'Fold the text nodes'));
+			ui.appendChild(drawOptionRow('transparent', 'Enable transparent background'));
 			ui.appendChild(head2);
 			ui.appendChild(drawOptionRow('nodeTypes-3', 'Text node'));
 			ui.appendChild(drawOptionRow('nodeTypes-8', 'Comment node'));
@@ -708,7 +709,6 @@
 			domView.querySelector('.adi-content').style.height = domView.clientHeight + 'px';
 			attrView.querySelector('.adi-content').style.height = (attrView.clientHeight - menuView.clientHeight) + 'px';
 			addClass(uiView, options.align);
-			pathView.textContent = '';
 		}
 
 		// UI visibility toggle handler
@@ -720,6 +720,82 @@
 			uiView.style.display = options.visible ? 'none' : 'block';
 			options.visible = !options.visible;
 			saveOptions();
+		}
+
+		// Helper function for attributes view
+		function drawAttrRow(attrName, attrValue) {
+			var row = newElement('span', { class: 'adi-attr' });
+			row.innerHTML = '<label>' + attrName + ': <input type="text" data-attr="' + attrName + '" value="' + attrValue + '"></label>';
+
+			return row;
+		}
+
+		// Renders the attribute view
+		function drawAttrs(elem) {
+			if (typeof elem !== 'object') {
+				throw "drawAttrs: Expected argument elem of type object, " + typeof elem + " given.";
+			}
+
+			var content = attrView.querySelector('.adi-content'),
+				attrsMain = {
+					'id': '',
+					'class': '',
+					'style': ''
+				},
+				attrsOther = {},
+				keys = [],
+				attr, i, len;
+
+			// prepare attributes
+			content.innerHTML = '';
+			for (i = 0, len = elem.attributes.length; i < len; ++i) {
+				attr = elem.attributes[i];
+
+				switch (attr.nodeName.toLowerCase()) {
+					case 'id':
+						attrsMain['id'] = attr.nodeValue;
+						break;
+					case 'class':
+						attrsMain['class'] = attr.nodeValue;
+						break;
+					case 'style':
+						attrsMain['style'] = styleBackup;
+						break;
+					default:
+						attrsOther[attr.nodeName.toLowerCase()] = attr.nodeValue;
+				}
+			}
+
+			// sort attributes
+			for (var key in attrsOther) {
+				keys.push(key);
+			}
+			keys.sort();
+
+			// render the content
+			content.appendChild(drawAttrRow('id', attrsMain['id']));
+			content.appendChild(drawAttrRow('class', attrsMain['class']));
+			content.appendChild(drawAttrRow('style', attrsMain['style']));
+			content.appendChild(newElement('hr'));
+
+			for (i = 0, len = keys.length; i < len; ++i) {
+				content.appendChild(drawAttrRow(keys[i], attrsOther[keys[i]]));
+			}
+		}
+
+		// Handles attribute changes
+		function changeAttribute(e) {
+			var target = e ? e.target : window.event.srcElement,
+				attr = target.getAttribute('data-attr'),
+				val = target.value,
+				elem = getSelected();
+
+			// remove attribute if the new value is empty
+			if (val === '') {
+				elem.removeAttribute(attr);
+			} else {
+				elem.setAttribute(attr, val);
+			}
 		}
 
 		// Handles option changes
@@ -833,6 +909,7 @@
 			}
 
 			checkPathOverflow();
+			drawAttrs(getSelected());
 		}
 
 		// Checks if pathView is overflowing or not
@@ -884,7 +961,11 @@
 					styleBackup = node.getAttribute('style') || '';
 					node.setAttribute('style', 'outline: 1px dashed red; ' + styleBackup);
 				} else {
-					node.setAttribute('style', styleBackup);
+					if (styleBackup === '') {
+						node.removeAttribute('style');
+					} else {
+						node.setAttribute('style', styleBackup);
+					}
 				}
 			}
 		}
@@ -1036,6 +1117,10 @@
 			addEventDelegate(optsView, 'change', changeOption, false, 'input');
 			addEventDelegate(optsView, 'click', toggleOptions, false, '.adi-opt-close');
 			addEvent(menuView.querySelector('.adi-menu-config'), 'click', toggleOptions, false);
+
+			// attributes events
+			addEventDelegate(attrView, 'change', changeAttribute, false, 'input');
+
 		}
 
 		drawUI();

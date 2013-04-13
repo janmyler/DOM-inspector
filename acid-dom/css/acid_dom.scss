@@ -338,6 +338,21 @@ body { -webkit-animation: bugfix infinite 1s; }
 #adi-attr-view {
 	height: 50%;
 
+	.adi-attr {
+		display: block;
+		padding: 5px 0;
+	}
+
+	hr {
+		height: 1px;
+		border: none;
+	}
+
+	input[type=text] {
+		width: 100%;
+		margin-top: 3px;
+		padding: 2px;
+	}
 }
 
 #adi-horiz-split {
