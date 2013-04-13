@@ -259,6 +259,7 @@
 			domView = null,
 			attrView = null,
 			pathView = null,
+			optsView = null,
 			activeElement = null,
 			vertResizing = false,
 			horizResizing = false,
@@ -274,6 +275,7 @@
 				minSplit: 30,
 				visible: true,
 				saving: false,
+				transparent: true,
 				omitEmptyText: true,
 				makeVisible: true,
 				foldText: true,
@@ -525,7 +527,7 @@
 				isOpen = true;
 
 			if (isRoot && options.nodeTypes.indexOf(root.nodeType) !== -1) {
-				// console.log(root, nLevel, root.nodeType);
+				elem.innerHTML = '';
 				newNode = newTreeNode(root);
 
 				if (hasRequiredNodes(root)) {
@@ -572,9 +574,59 @@
 			}
 		}
 
+		// Show/hide the options view
+		function toggleOptions() {
+			if (optsView.className.indexOf('adi-hidden') !== -1) {
+				removeClass(optsView, 'adi-hidden');
+			} else {
+				addClass(optsView, 'adi-hidden');
+				refreshUI();
+				drawDOM(document, domView.querySelector('.adi-tree-view'), true);
+
+				options.saveOptions ? saveOptions() : resetOptions();
+			}
+		}
+
+		// Helper function for options view
+		function drawOptionRow(optionCode, optionText) {
+			var row = newElement('span', { class: 'adi-opt' });
+			row.innerHTML = '<label><input type="checkbox" data-opt="' + optionCode + '">' + optionText + '</label>';
+
+			return row;
+		}
+
+		// Renders the options panel
+		function drawOptions() {
+			var ui = newElement('div', { id: 'adi-opts-view', class: 'adi-hidden' }),
+				head1 = newElement('span', { class: 'adi-opt-heading' }),
+				head2 = newElement('span', { class: 'adi-opt-heading' }),
+				close = newElement('span', { class: 'adi-opt-close' });
+
+			head1.textContent = 'General options';
+			head2.textContent = 'Observed nodes';
+
+			ui.appendChild(head1);
+			ui.appendChild(drawOptionRow('transparent', 'Enable transparent background'));
+			ui.appendChild(drawOptionRow('saving', 'Enable saving of settings'));
+			ui.appendChild(drawOptionRow('omitEmptyText', 'Hide empty text nodes'));
+			ui.appendChild(drawOptionRow('makeVisible', 'Scroll to the active element in DOM View'));
+			ui.appendChild(drawOptionRow('foldText', 'Fold the text nodes'));
+			ui.appendChild(head2);
+			ui.appendChild(drawOptionRow('nodeTypes-3', 'Text node'));
+			ui.appendChild(drawOptionRow('nodeTypes-8', 'Comment node'));
+			// ui.appendChild(drawOptionRow('nodeTypes-1', 'Element node'));
+			// ui.appendChild(drawOptionRow('nodeTypes-9', 'Document node'));
+			ui.appendChild(close);
+
+			return ui;
+		}
+
 		// Renders the UI
 		function drawUI() {
-			var wrapper = newElement('div', { id: 'adi-wrapper' }),
+			var wrapper = newElement('div', {
+					id: 'adi-wrapper',
+					class: options.transparent ? 'transparent' : ''
+				}),
 				domViewWrap = newElement('div', { id: 'adi-dom-view' }),
 				domViewContent = newElement('div', { class: 'adi-content' }),
 				attrViewWrap = newElement('div', { id: 'adi-attr-view' }),
@@ -589,7 +641,9 @@
 				naviWrap = newElement('div', { id: 'adi-panel' }),
 				naviButtons = newElement('div', { class: 'adi-menu-wrap' }),
 				naviConfig = newElement('a', { class: 'adi-menu-config' }),
-				naviLookup = newElement('a', { class: 'adi-menu-lookup' });
+				naviLookup = newElement('a', { class: 'adi-menu-lookup' }),
+				optionsView = drawOptions();
+
 
 			// put UI together
 			domViewContent.appendChild(domTree);
@@ -602,6 +656,7 @@
 			naviButtons.appendChild(naviConfig);
 			naviWrap.appendChild(domPathWrap);
 			naviWrap.appendChild(naviButtons);
+			wrapper.appendChild(optionsView);
 			wrapper.appendChild(domViewWrap);
 			wrapper.appendChild(horizSplit);
 			wrapper.appendChild(attrViewWrap);
@@ -615,6 +670,7 @@
 			domView = uiView.querySelector('#adi-dom-view');
 			attrView = uiView.querySelector('#adi-attr-view');
 			pathView = domPath;
+			optsView = optionsView;
 			refreshUI(true);
 		}
 
@@ -629,7 +685,21 @@
 				loadOptions();
 			}
 
+			// Options view refresh
+			if (refreshOpts) {
+				optsView.querySelector('[data-opt="transparent"]').checked = options.transparent;
+				optsView.querySelector('[data-opt="saving"]').checked = options.saving;
+				optsView.querySelector('[data-opt="omitEmptyText"]').checked = options.omitEmptyText;
+				optsView.querySelector('[data-opt="makeVisible"]').checked = options.makeVisible;
+				optsView.querySelector('[data-opt="foldText"]').checked = options.foldText;
+				optsView.querySelector('[data-opt="nodeTypes-3"]').checked = options.nodeTypes.indexOf(3) !== -1;
+				optsView.querySelector('[data-opt="nodeTypes-8"]').checked = options.nodeTypes.indexOf(8) !== -1;
+				// optsView.querySelector('[data-opt="nodeTypes-1"]').checked = options.nodeTypes.indexOf(1) !== -1;
+				// optsView.querySelector('[data-opt="nodeTypes-9"]').checked = options.nodeTypes.indexOf(9) !== -1;
+			}
+
 			// UI appearance refresh
+			uiView.className = options.transparent ? 'transparent' : '';
 			uiView.style.display = options.visible ? 'block' : 'none';
 			uiView.style.width = options.width + 'px';
 			menuView.style.width = options.width + 'px';
@@ -638,6 +708,7 @@
 			domView.querySelector('.adi-content').style.height = domView.clientHeight + 'px';
 			attrView.querySelector('.adi-content').style.height = (attrView.clientHeight - menuView.clientHeight) + 'px';
 			addClass(uiView, options.align);
+			pathView.textContent = '';
 		}
 
 		// UI visibility toggle handler
@@ -649,6 +720,25 @@
 			uiView.style.display = options.visible ? 'none' : 'block';
 			options.visible = !options.visible;
 			saveOptions();
+		}
+
+		// Handles option changes
+		function changeOption(e) {
+			var target = e ? e.target : window.event.srcElement,
+				data = target.getAttribute('data-opt'),
+				val = target.checked;
+
+			if (data.indexOf('nodeTypes') !== -1) {
+				var type = parseInt(data.match(/\d+/)[0]);
+
+				if (val) {
+					options.nodeTypes.push(type);
+				} else {
+					options.nodeTypes.splice(options.nodeTypes.indexOf(type), 1);
+				}
+			} else {
+				options[data] = val;
+			}
 		}
 
 		// Key events processing
@@ -942,7 +1032,10 @@
 			// element lookup
 			addEvent(menuView.querySelector('.adi-menu-lookup'), 'click', handleLookup, false);
 
-			// TODO: Menu events
+			// options events
+			addEventDelegate(optsView, 'change', changeOption, false, 'input');
+			addEventDelegate(optsView, 'click', toggleOptions, false, '.adi-opt-close');
+			addEvent(menuView.querySelector('.adi-menu-config'), 'click', toggleOptions, false);
 		}
 
 		drawUI();

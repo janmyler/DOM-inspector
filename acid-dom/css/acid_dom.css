@@ -41,6 +41,9 @@ body {
 #adi-wrapper.right {
   right: 0;
 }
+#adi-wrapper.transparent {
+  background: rgba(250, 250, 250, 0.9);
+}
 
 #adi-panel {
   position: fixed;
@@ -80,6 +83,11 @@ body {
   height: 24px;
   background-repeat: no-repeat;
   background-position: center center;
+  opacity: .7;
+}
+#adi-panel .adi-path-left:hover,
+#adi-panel .adi-path-right:hover {
+  opacity: 1;
 }
 #adi-panel .adi-path-left {
   left: 7px;
@@ -105,14 +113,17 @@ body {
   border-left: 1px solid #bbc5c9;
   background-position: center center;
   background-repeat: no-repeat;
+  opacity: .7;
 }
 #adi-panel .adi-menu-lookup:hover,
 #adi-panel .adi-menu-config:hover {
   background-color: #c5d9d8;
+  opacity: 1;
 }
 #adi-panel .adi-menu-lookup.adi-active,
 #adi-panel .adi-menu-config.adi-active {
   background-color: #fafafa;
+  opacity: 1;
 }
 #adi-panel .adi-menu-lookup {
   background-image: url('../img/lookup.png?1365460864');
@@ -193,12 +204,53 @@ body {
   width: 10px;
   height: 10px;
   margin: 0 5px 0 -13px;
+  opacity: .7;
 }
 #adi-dom-view .adi-trigger.closed {
   background: url('../img/node_closed.png?1365461059') no-repeat;
 }
 #adi-dom-view .adi-trigger.opened {
   background: url('../img/node_opened.png?1365461113') no-repeat;
+}
+#adi-dom-view .adi-trigger:hover {
+  opacity: 1;
+}
+
+#adi-opts-view {
+  position: relative;
+  height: 100%;
+  padding: 0 15px;
+  background: #fff;
+}
+#adi-opts-view.adi-hidden {
+  display: none;
+}
+#adi-opts-view .adi-opt-heading,
+#adi-opts-view .adi-opt {
+  display: block;
+  padding: 5px 0;
+}
+#adi-opts-view .adi-opt-heading {
+  padding: 20px 0 10px;
+  font-size: 15px;
+}
+#adi-opts-view .adi-opt-heading:first-child {
+  padding-top: 10px;
+}
+#adi-opts-view .adi-opt input {
+  margin-right: 6px;
+}
+#adi-opts-view .adi-opt-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  background: url('../img/options_close.png?1365809931') no-repeat;
+  opacity: .7;
+}
+#adi-opts-view .adi-opt-close:hover {
+  opacity: 1;
 }
 
 #adi-attr-view {
