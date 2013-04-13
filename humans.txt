@@ -1,0 +1,23 @@
+/*                                                    ___
+ *         .o.                 ooooo oooooooooo.    \(o_-)/
+ *        .888.                `888' `888'   `Y8b     "U"
+ *       .8"888.      .ooooo.   888   888      888    d b
+ *      .8' `888.    d88' `"Y8  888   888      888
+ *     .88ooo8888.   888        888   888      888
+ *    .8'     `888.  888   .o8  888   888     d88'
+ *   o88o     o8888o `Y8bod8P' o888o o888bood8P'
+ *
+ *   humans.txt - 'We Are People, Not Machines'
+ */
+
+/* TEAM */
+  Creator & Maintainer: Jan Myler aka AcID
+  Site: http://janmyler.com
+  E-Mail: info@janmyler.com
+  Twitter: janmyler
+  Location: Brno, Czech Republic
+
+/* SITE */
+  Standards:  HTML5, CSS3, JavaScript
+  Components: jQuery, Compass, SASS
+  Software:   Sublime Text 2

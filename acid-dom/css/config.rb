@@ -2,8 +2,8 @@
 require "compass-normalize"
 
 # Environment settings
-# environment = :production
-environment = :development
+environment = :production
+# environment = :development
 
 # Configuration
 http_path = "/"
