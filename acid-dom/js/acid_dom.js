@@ -1120,7 +1120,6 @@
 
 			// attributes events
 			addEventDelegate(attrView, 'change', changeAttribute, false, 'input');
-
 		}
 
 		drawUI();
@@ -1131,8 +1130,6 @@
 			// TODO: public methods and variables (this will be visible to the global scope)
 			getSelectedElement: getSelected,
 			toggle: toggleVisibilityUI,
-			options: options,  // FIXME: remove
-			getPaths: getElemPaths
 		};
 	})();
 
