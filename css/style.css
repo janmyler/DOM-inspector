@@ -266,3 +266,158 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
 }
+
+::-moz-selection {
+  background: rgba(112, 101, 92, 0.4);
+  color: #fff;
+  text-shadow: #444444 1px 1px 3px;
+}
+
+::selection {
+  background: rgba(112, 101, 92, 0.4);
+  color: #fff;
+  text-shadow: #444444 1px 1px 3px;
+}
+
+.left {
+  float: left;
+}
+
+.right {
+  float: right;
+}
+
+@media (max-width: 940px) {
+  #github-link {
+    display: none;
+    opacity: 0 !important;
+  }
+}
+body {
+  background: #f0f2dc url('../img/noise.png?1365861774') repeat;
+  font-family: "Segoe UI", sans-serif;
+  color: #70655c;
+}
+
+h1, h2, h3 {
+  font-family: "Roboto Condensed", sans-serif;
+  color: #ee5357;
+  text-shadow: 1px 1px #70655c;
+}
+
+h1 {
+  margin-top: 0.4em;
+  font-size: 3.6em;
+}
+
+h2 {
+  font-size: 2.2em;
+}
+
+h3 {
+  font-size: 1.6em;
+}
+
+a {
+  color: #70655c;
+  text-decoration: none;
+  border-bottom: 1px solid #70655c;
+}
+a:hover {
+  background: #d9eb52;
+  border-radius: 5px;
+}
+
+code {
+  padding: 2px 5px;
+  background-color: #9fd0e3;
+  background-color: rgba(159, 208, 227, 0.3);
+  border-radius: 5px;
+  -webkit-box-shadow: inset 1px 1px 3px #70655c;
+  -moz-box-shadow: inset 1px 1px 3px #70655c;
+  box-shadow: inset 1px 1px 3px #70655c;
+}
+
+pre code {
+  display: block;
+  text-align: left;
+  padding: 10px 5px;
+}
+
+#github-link {
+  display: block;
+  transition: opacity 0.3s ease-in;
+  -webkit-transition: opacity 0.3s ease-in;
+  opacity: 1;
+}
+
+.author-info {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin: 0 0 6px 0;
+}
+
+#wrap {
+  width: 800px;
+  margin: 0 auto;
+}
+
+#header {
+  position: relative;
+}
+
+#main img {
+  margin: 5px 30px 20px;
+  border-radius: 5px;
+  -webkit-box-shadow: 0 0 4px rgba(112, 101, 92, 0.5);
+  -moz-box-shadow: 0 0 4px rgba(112, 101, 92, 0.5);
+  box-shadow: 0 0 4px rgba(112, 101, 92, 0.5);
+}
+#main img.left {
+  margin-left: 0;
+}
+#main img.right {
+  margin-right: 0;
+}
+#main .step {
+  position: relative;
+  min-height: 80px;
+  padding-left: 44px;
+}
+#main .step:before {
+  position: absolute;
+  top: -10px;
+  left: 0;
+  font-family: 'Roboto Condensed';
+  font-size: 3em;
+}
+#main .step.first:before {
+  content: '1';
+}
+#main .step.second:before {
+  content: '2';
+}
+#main .step.third:before {
+  content: '3';
+}
+#main .step.fourth:before {
+  content: '4';
+}
+#main .step.fifth:before {
+  content: '5';
+}
+#main .step pre {
+  margin-bottom: 40px;
+}
+#main dt {
+  font-weight: bold;
+}
+#main dd {
+  margin: 5px 0 15px;
+}
+
+#footer {
+  margin: 30px 0;
+  text-align: right;
+}

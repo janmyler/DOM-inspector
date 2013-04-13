@@ -14,4 +14,147 @@
 @import "compass/css3";
 @import "compass/utilities/general/clearfix";
 
+$gray: #F0F2DC;
+$green: #D9EB52;
+$blue: #9FD0E3;
+$red: #EE5357;
+$brown: #70655C;
 
+::-moz-selection { background: fade-out($brown, .6); color: #fff; text-shadow: #444 1px 1px 3px; }
+::selection { background: fade-out($brown, .6); color: #fff; text-shadow: #444 1px 1px 3px; }
+
+.left { float: left }
+.right { float: right }
+
+@media (max-width: 940px) {
+  #github-link {
+    display: none;
+    opacity: 0 !important;
+  }
+}
+
+body {
+	background: $gray image-url('noise.png') repeat;
+	font-family: 'Segoe UI', sans-serif;
+	color: $brown;
+}
+
+h1, h2, h3 {
+	font-family: 'Roboto Condensed', sans-serif;
+	color: $red;
+	text-shadow: 1px 1px $brown;
+}
+
+h1 {
+	margin-top: 0.4em;
+	font-size: 3.6em;
+}
+
+h2 {
+	font-size: 2.2em;
+}
+
+h3 {
+	font-size: 1.6em;
+}
+
+a {
+	color: $brown;
+	text-decoration: none;
+	border-bottom: 1px solid $brown;
+
+	&:hover {
+		background: $green;
+		border-radius: 5px;
+	}
+
+}
+
+code {
+	padding: 2px 5px;
+	background-color: $blue;
+	background-color: fade-out($blue, 0.7);
+	border-radius: 5px;
+	-webkit-box-shadow: inset 1px 1px 3px $brown;
+	-moz-box-shadow: inset 1px 1px 3px $brown;
+	box-shadow: inset 1px 1px 3px $brown;
+}
+
+pre code {
+	display: block;
+	text-align: left;
+	padding: 10px 5px;
+}
+
+#github-link {
+	display: block;
+	transition: opacity .3s ease-in;
+    -webkit-transition: opacity .3s ease-in;
+	opacity: 1;
+}
+
+.author-info {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	margin: 0 0 6px 0;
+}
+
+#wrap {
+	width: 800px;
+	margin: 0 auto;
+}
+
+#header {
+	position: relative;
+}
+
+#main {
+	img {
+		margin: 5px 30px 20px;
+		border-radius: 5px;
+		-webkit-box-shadow: 0 0 4px fade-out($brown, .5);
+		-moz-box-shadow: 0 0 4px fade-out($brown, .5);
+		box-shadow: 0 0 4px fade-out($brown, .5);
+
+		&.left { margin-left: 0 }
+		&.right { margin-right: 0 }
+	}
+
+	.step {
+		position: relative;
+		min-height: 80px;
+		padding-left: 44px;
+
+		&:before {
+			position: absolute;
+			top: -10px;
+			left: 0;
+			font-family: 'Roboto Condensed';
+			font-size: 3em;
+		}
+
+		&.first:before { content: '1'; }
+		&.second:before { content: '2'; }
+		&.third:before { content: '3'; }
+		&.fourth:before { content: '4'; }
+		&.fifth:before { content: '5'; }
+
+		pre {
+			margin-bottom: 40px;
+		}
+	}
+
+	dt {
+		font-weight: bold;
+	}
+
+	dd {
+		margin: 5px 0 15px;
+	}
+}
+
+#footer {
+	margin: 30px 0;
+	text-align: right;
+}

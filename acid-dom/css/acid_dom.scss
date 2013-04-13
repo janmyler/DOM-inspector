@@ -15,7 +15,7 @@
 
 // colors
 $light: #FAFAFA;
-$lightA: rgba(250, 250, 250, 0.9);
+$lightA: rgba(250, 250, 250, 0.8);
 $activeBlue: #C5D9D8;
 $gray: #D4D4D4;
 $darkGray: #BBC5C9;
@@ -169,6 +169,7 @@ body { -webkit-animation: bugfix infinite 1s; }
 		background-position: center center;
 		background-repeat: no-repeat;
 		opacity: .7;
+		border-radius: 0;
 
 		&:hover {
 			background-color: $activeBlue;

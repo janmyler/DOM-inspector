@@ -641,8 +641,8 @@
 				domPathScrollRight = newElement('span', { class: 'adi-path-right' }),
 				naviWrap = newElement('div', { id: 'adi-panel' }),
 				naviButtons = newElement('div', { class: 'adi-menu-wrap' }),
-				naviConfig = newElement('a', { class: 'adi-menu-config' }),
-				naviLookup = newElement('a', { class: 'adi-menu-lookup' }),
+				naviConfig = newElement('a', { class: 'adi-menu-config', title: 'Settings' }),
+				naviLookup = newElement('a', { class: 'adi-menu-lookup', title: 'Lookup tool' }),
 				optionsView = drawOptions();
 
 
@@ -1007,7 +1007,7 @@
 
 					// find corresponding node in the DOM view
 					var path = getElemPaths(target),
-						active = domView.querySelector('[data-css-path="' + path.cssPath + '"]');
+						active = domView.querySelector('[data-js-path=\'' + JSON.stringify(path.jsPath) + '\']');
 
 					// activate it
 					if (active) {
@@ -1017,6 +1017,8 @@
 					// open the whole path in DOM view
 					var node = active.parentNode,
 						tmp;
+
+					node.querySelector('ul').setAttribute('data-open', 'true');
 					while(node !== domView.querySelector('.adi-content')) {
 						if (node.className.indexOf('adi-node') !== -1) {
 							tmp = node.querySelector('.adi-trigger');
