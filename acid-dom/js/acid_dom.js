@@ -14,7 +14,6 @@
 	'use strict';
 
 	var delegatedEvents = [];
-	window.rtt = delegatedEvents;
 
 	// Console compatibility shim.
 	function consoleShim() {
