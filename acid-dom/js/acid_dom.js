@@ -1,5 +1,5 @@
 /**
- * AcID Dom Inspector 1.0
+ * AcID Dom Inspector 1.0.1
  *
  * @file        acid_dom.js
  * @author      Jan Myler <info@janmyler.com>
@@ -584,7 +584,11 @@
 				attrView.querySelector('.adi-content').innerHTML = '';
 				refreshUI();
 				drawDOM(document, domView.querySelector('.adi-tree-view'), true);
-				options.saveOptions ? saveOptions() : resetOptions();
+				if (options.saving) {
+					saveOptions();
+				} else {
+					resetOptions();
+				}
 			}
 		}
 
@@ -1018,7 +1022,9 @@
 					var node = active.parentNode,
 						tmp;
 
-					node.querySelector('ul').setAttribute('data-open', 'true');
+					if (node.querySelector('ul')) {
+						node.querySelector('ul').setAttribute('data-open', 'true');
+					}
 					while(node !== domView.querySelector('.adi-content')) {
 						if (node.className.indexOf('adi-node') !== -1) {
 							tmp = node.querySelector('.adi-trigger');
@@ -1131,7 +1137,7 @@
 		return {
 			// TODO: public methods and variables (this will be visible to the global scope)
 			getSelectedElement: getSelected,
-			toggle: toggleVisibilityUI,
+			toggle: toggleVisibilityUI
 		};
 	})();
 
