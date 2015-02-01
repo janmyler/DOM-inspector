@@ -1,4 +1,4 @@
-# [AcID DOM Inspector](http://adi.janmyler.com)
+# [AcID DOM Inspector](http://demo.janmyler.ninja/adi/)
 
 ## Overview
 
@@ -16,5 +16,5 @@ ADI provides a simple DOM tree overview with an interactive highlighting feature
 
 ## Usage notes
 
-For further information visit the [ADI demo page](http://adi.janmyler.com), please.
+For further information visit the [ADI demo page](http://demo.janmyler.ninja/adi/), please.
 
